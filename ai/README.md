@@ -3,6 +3,10 @@
 El componente de AI Engineering del capstone. Construye un **RAG** de fuerza y
 nutrición y lo despliega como **Hugging Face Space** (Gradio), que la web embebe.
 
+LLM: **Google Gemini** (tier gratuito). Una sola API key cubre embeddings
+(`text-embedding-004`) y generación (`gemini-2.0-flash`) → coste 0 €.
+Consíguela gratis en https://aistudio.google.com/apikey.
+
 ```
 ai/
 ├── notebooks/
@@ -17,7 +21,7 @@ ai/
 ## Opción A · Desde el notebook (recomendado, sigue el estándar del curso)
 
 1. Sube `notebooks/01-rag-coach-forged.ipynb` a [Google Colab](https://colab.research.google.com/).
-2. Ejecútalo de arriba a abajo. Te pedirá `OPENAI_API_KEY` (y `HF_TOKEN` al final).
+2. Ejecútalo de arriba a abajo. Te pedirá `GEMINI_API_KEY` (y `HF_TOKEN` al final).
 3. Construye el RAG, lo prueba con varias queries y lanza Gradio (`share=True`).
 4. La última sección empaqueta y **sube el Space** a tu cuenta de HF.
 
@@ -29,7 +33,7 @@ huggingface-cli login        # token con scope 'write'
 huggingface-cli upload <tu-usuario>/forged-coach ai/space . --repo-type=space
 ```
 
-Luego, en el Space: *Settings → Secrets* → añade `OPENAI_API_KEY`.
+Luego, en el Space: *Settings → Secrets* → añade `GEMINI_API_KEY`.
 
 ## Conectar el Coach con la web
 

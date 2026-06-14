@@ -67,7 +67,7 @@ Todo el detalle está en [`ai/README.md`](ai/README.md). Resumen:
 1. Abre [`ai/notebooks/01-rag-coach-forged.ipynb`](ai/notebooks/01-rag-coach-forged.ipynb) en Google Colab.
 2. Ejecútalo de arriba a abajo: construye el RAG y prueba Gradio en local (`share=True`).
 3. La última sección sube `ai/space/` a un Space (Gradio) con tu `HF_TOKEN`.
-4. Añade `OPENAI_API_KEY` como **secret** del Space.
+4. Añade `GEMINI_API_KEY` como **secret** del Space (key gratis en https://aistudio.google.com/apikey).
 5. Copia la URL pública del Space en `NEXT_PUBLIC_COACH_URL` (local y en Vercel).
 
 ## Checklist de aceptación (ver `01-DOCS/spec.md`)

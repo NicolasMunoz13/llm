@@ -16,24 +16,26 @@ Coach de fuerza y nutrición con voz David Goggins. Usa **RAG** sobre el corpus 
 la marca (carpeta `data/`) y cita sus fuentes. Es el componente de AI Engineering
 del capstone M9 (curso *AI Engineering*, KeepCoding).
 
+LLM: **Google Gemini** (tier gratuito) — embeddings + generación con una sola key.
+
 ## Cómo funciona
 
-1. Al arrancar, embebe los documentos de `data/*.md` (`text-embedding-3-small`).
-2. Por cada pregunta: recupera top-3 chunks por similitud coseno.
-3. Genera la respuesta con el contexto recuperado (voz Goggins, cita fuentes).
+1. Al arrancar, embebe los documentos de `data/*.md` (`text-embedding-004`, task type RETRIEVAL_DOCUMENT).
+2. Por cada pregunta: recupera top-3 chunks por similitud coseno (query con RETRIEVAL_QUERY).
+3. Genera la respuesta con el contexto recuperado (`gemini-2.0-flash`, voz Goggins, cita fuentes).
 4. Safety lite: filtro de prompt injection en la entrada + disclaimer médico.
 
 ## Configuración
 
-Añade el secret **`OPENAI_API_KEY`** en *Settings → Secrets and variables* del Space.
-(Opcional) `FORGED_CHAT_MODEL` para cambiar el modelo de generación (por defecto
-`gpt-4o-mini`).
+Añade el secret **`GEMINI_API_KEY`** en *Settings → Secrets and variables* del Space.
+Consíguela gratis en https://aistudio.google.com/apikey.
+(Opcional) `FORGED_CHAT_MODEL` / `FORGED_EMBED_MODEL` para cambiar de modelo.
 
 ## Probar en local
 
 ```bash
 pip install -r requirements.txt
-export OPENAI_API_KEY=sk-...
+export GEMINI_API_KEY=...
 python app.py
 ```
 

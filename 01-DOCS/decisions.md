@@ -14,7 +14,7 @@ alcance: CMS, auth, pagos).
 
 ## D3 · Coach IA como HF Space embebido, no API en el propio Next.js
 Reutilizamos el estándar de M32 (Gradio → HF Spaces). Así el coste/secreto del
-LLM vive en el Space (secret `OPENAI_API_KEY` en HF), y la web sólo embebe un
+LLM vive en el Space (secret `GEMINI_API_KEY` en HF), y la web sólo embebe un
 `iframe`. La web no necesita backend ni exponer claves. Se conecta vía
 `NEXT_PUBLIC_COACH_URL`; si falta, hay fallback.
 
@@ -32,13 +32,14 @@ Usamos el *registro* (frases cortas, accountability, "stay hard") y conceptos
 reinterpretados (callo mental, regla del 40%) en vez de transcribir frases con
 copyright. Suficiente para que la web "suene a él" sin plagiar.
 
-## D7 · Modelo LLM del coach
-Decidido: usar un **proveedor con tier gratuito** (Google Gemini o Groq) para que
-el Coach tenga coste 0. El notebook y `ai/space/app.py` se adaptarán a ese
-proveedor cuando se despliegue el Coach (paso posterior al deploy de la web).
-La versión inicial quedó escrita contra OpenAI (patrón de M32); migrar el cliente
-y el modelo es un cambio acotado. Alternativa open-weights (Gemma/Qwen, M12)
-también válida si se prefiere autohospedaje.
+## D7 · Modelo LLM del coach → Google Gemini (tier gratuito)
+Decidido: **Google Gemini** (AI Studio), elegido sobre Groq porque RAG necesita
+*embeddings + generación* y Gemini cubre ambos en su tier gratuito con **una sola
+API key** (`text-embedding-004` + `gemini-2.0-flash`). Groq solo ofrece generación,
+no embeddings → exigiría un segundo proveedor. Coste del Coach: **0 €**.
+El notebook y `ai/space/app.py` usan el SDK `google-genai`. Alternativa
+open-weights (Gemma/Qwen, M12) válida si se prefiere autohospedaje.
 
-> Estado: la **web se despliega primero** en Vercel (sin Coach, con fallback).
-> El Coach (Gemini/Groq) se conecta después vía `NEXT_PUBLIC_COACH_URL`.
+> Estado: la **web ya está desplegada** en Vercel (https://llm-green-tau.vercel.app/,
+> repo personal NicolasMunoz13/llm). El Coach (Gemini) se conecta vía el secret
+> `GEMINI_API_KEY` en el HF Space + la env var `NEXT_PUBLIC_COACH_URL` en Vercel.

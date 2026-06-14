@@ -5,7 +5,8 @@ Coach de fuerza y nutrición con voz David Goggins. Responde fundamentándose en
 corpus de la marca (carpeta data/) y cita las fuentes. Patrón del lab M32:
 RAG + Gradio + safety lite, desplegable en HF Spaces.
 
-Requiere el secret OPENAI_API_KEY en el Space (Settings -> Secrets).
+LLM: Google Gemini (tier gratuito) — embeddings + generación con una sola key.
+Requiere el secret GEMINI_API_KEY en el Space (Settings -> Secrets).
 """
 
 import os
@@ -13,17 +14,18 @@ import re
 import glob
 import numpy as np
 import gradio as gr
-from openai import OpenAI
+from google import genai
+from google.genai import types
 
 # ----------------------------------------------------------------------------
 # 0. Config
 # ----------------------------------------------------------------------------
-EMBED_MODEL = "text-embedding-3-small"
-CHAT_MODEL = os.getenv("FORGED_CHAT_MODEL", "gpt-4o-mini")
+EMBED_MODEL = os.getenv("FORGED_EMBED_MODEL", "text-embedding-004")
+CHAT_MODEL = os.getenv("FORGED_CHAT_MODEL", "gemini-2.0-flash")
 TOP_K = 3
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
-client = OpenAI()  # lee OPENAI_API_KEY del entorno (secret del Space)
+client = genai.Client()  # lee GEMINI_API_KEY (o GOOGLE_API_KEY) del entorno
 
 SYSTEM_PROMPT = """Eres el Coach IA de FORGED, una marca de fuerza y nutrición.
 Tu voz es la de David Goggins: directa, intensa, sin excusas, en segunda persona y
@@ -38,6 +40,7 @@ REGLAS:
 - Español. Sé útil y concreto: números, rangos, pasos. Nada de relleno motivacional vacío.
 """
 
+
 # ----------------------------------------------------------------------------
 # 1. Cargar y trocear el corpus (chunking simple por documento)
 # ----------------------------------------------------------------------------
@@ -48,23 +51,28 @@ def load_corpus():
         with open(path, encoding="utf-8") as f:
             text = f.read()
         # un chunk por sección "## " (mantiene el contexto del título)
-        parts = re.split(r"\n(?=## )", text)
-        for part in parts:
+        for part in re.split(r"\n(?=## )", text):
             part = part.strip()
             if len(part) > 40:
                 chunks.append({"source": name, "text": part})
     return chunks
 
 
-def embed(texts):
-    resp = client.embeddings.create(model=EMBED_MODEL, input=texts)
-    return np.array([d.embedding for d in resp.data], dtype=np.float32)
+def embed(texts, task_type):
+    """Embebe con Gemini. task_type: RETRIEVAL_DOCUMENT (corpus) o RETRIEVAL_QUERY (pregunta)."""
+    resp = client.models.embed_content(
+        model=EMBED_MODEL,
+        contents=texts,
+        config=types.EmbedContentConfig(task_type=task_type),
+    )
+    vecs = np.array([e.values for e in resp.embeddings], dtype=np.float32)
+    vecs /= np.linalg.norm(vecs, axis=1, keepdims=True) + 1e-8
+    return vecs
 
 
 print("Cargando corpus FORGED...")
 CHUNKS = load_corpus()
-DOC_EMB = embed([c["text"] for c in CHUNKS])
-DOC_EMB /= np.linalg.norm(DOC_EMB, axis=1, keepdims=True) + 1e-8
+DOC_EMB = embed([c["text"] for c in CHUNKS], "RETRIEVAL_DOCUMENT")
 print(f"Corpus listo: {len(CHUNKS)} chunks de {len(set(c['source'] for c in CHUNKS))} documentos.")
 
 
@@ -72,8 +80,7 @@ print(f"Corpus listo: {len(CHUNKS)} chunks de {len(set(c['source'] for c in CHUN
 # 2. Retrieval (cosine top-k)
 # ----------------------------------------------------------------------------
 def retrieve(query, k=TOP_K):
-    q = embed([query])[0]
-    q /= np.linalg.norm(q) + 1e-8
+    q = embed([query], "RETRIEVAL_QUERY")[0]
     scores = DOC_EMB @ q
     idx = np.argsort(-scores)[:k]
     return [CHUNKS[i] for i in idx]
@@ -108,22 +115,26 @@ def coach(message, history):
     docs = retrieve(message)
     context = "\n\n---\n\n".join(f"[{d['source']}]\n{d['text']}" for d in docs)
 
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    # historial reciente (Gradio 'messages' format)
+    # historial reciente -> formato Gemini (roles 'user' / 'model')
+    contents = []
     for turn in history[-4:]:
-        if isinstance(turn, dict):
-            messages.append(turn)
-    messages.append(
-        {"role": "user", "content": f"CONTEXTO:\n{context}\n\nPREGUNTA: {message}"}
+        if isinstance(turn, dict) and turn.get("content"):
+            role = "model" if turn.get("role") == "assistant" else "user"
+            contents.append(types.Content(role=role, parts=[types.Part(text=turn["content"])]))
+    contents.append(
+        types.Content(role="user", parts=[types.Part(text=f"CONTEXTO:\n{context}\n\nPREGUNTA: {message}")])
     )
 
-    resp = client.chat.completions.create(
+    resp = client.models.generate_content(
         model=CHAT_MODEL,
-        messages=messages,
-        temperature=0.6,
-        max_tokens=600,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            temperature=0.6,
+            max_output_tokens=600,
+        ),
     )
-    return resp.choices[0].message.content
+    return resp.text
 
 
 # ----------------------------------------------------------------------------
