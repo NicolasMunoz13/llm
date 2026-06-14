@@ -21,7 +21,7 @@ from google.genai import types
 # 0. Config
 # ----------------------------------------------------------------------------
 EMBED_MODEL = os.getenv("FORGED_EMBED_MODEL", "gemini-embedding-001")
-CHAT_MODEL = os.getenv("FORGED_CHAT_MODEL", "gemini-2.0-flash")
+CHAT_MODEL = os.getenv("FORGED_CHAT_MODEL", "gemini-2.5-flash")
 TOP_K = 3
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
