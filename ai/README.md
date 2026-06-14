@@ -4,7 +4,7 @@ El componente de AI Engineering del capstone. Construye un **RAG** de fuerza y
 nutrición y lo despliega como **Hugging Face Space** (Gradio), que la web embebe.
 
 LLM: **Google Gemini** (tier gratuito). Una sola API key cubre embeddings
-(`text-embedding-004`) y generación (`gemini-2.0-flash`) → coste 0 €.
+(`gemini-embedding-001`) y generación (`gemini-2.0-flash`) → coste 0 €.
 Consíguela gratis en https://aistudio.google.com/apikey.
 
 ```

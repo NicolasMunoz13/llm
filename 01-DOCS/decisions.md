@@ -35,7 +35,7 @@ copyright. Suficiente para que la web "suene a él" sin plagiar.
 ## D7 · Modelo LLM del coach → Google Gemini (tier gratuito)
 Decidido: **Google Gemini** (AI Studio), elegido sobre Groq porque RAG necesita
 *embeddings + generación* y Gemini cubre ambos en su tier gratuito con **una sola
-API key** (`text-embedding-004` + `gemini-2.0-flash`). Groq solo ofrece generación,
+API key** (`gemini-embedding-001` + `gemini-2.0-flash`). Groq solo ofrece generación,
 no embeddings → exigiría un segundo proveedor. Coste del Coach: **0 €**.
 El notebook y `ai/space/app.py` usan el SDK `google-genai`. Alternativa
 open-weights (Gemma/Qwen, M12) válida si se prefiere autohospedaje.

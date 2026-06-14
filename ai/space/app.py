@@ -20,7 +20,7 @@ from google.genai import types
 # ----------------------------------------------------------------------------
 # 0. Config
 # ----------------------------------------------------------------------------
-EMBED_MODEL = os.getenv("FORGED_EMBED_MODEL", "text-embedding-004")
+EMBED_MODEL = os.getenv("FORGED_EMBED_MODEL", "gemini-embedding-001")
 CHAT_MODEL = os.getenv("FORGED_CHAT_MODEL", "gemini-2.0-flash")
 TOP_K = 3
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
@@ -59,15 +59,18 @@ def load_corpus():
 
 
 def embed(texts, task_type):
-    """Embebe con Gemini. task_type: RETRIEVAL_DOCUMENT (corpus) o RETRIEVAL_QUERY (pregunta)."""
-    resp = client.models.embed_content(
-        model=EMBED_MODEL,
-        contents=texts,
-        config=types.EmbedContentConfig(task_type=task_type),
-    )
-    vecs = np.array([e.values for e in resp.embeddings], dtype=np.float32)
-    vecs /= np.linalg.norm(vecs, axis=1, keepdims=True) + 1e-8
-    return vecs
+    """Embebe con Gemini (uno a uno, robusto). task_type: RETRIEVAL_DOCUMENT o RETRIEVAL_QUERY."""
+    vecs = []
+    for t in texts:
+        resp = client.models.embed_content(
+            model=EMBED_MODEL,
+            contents=t,
+            config=types.EmbedContentConfig(task_type=task_type),
+        )
+        vecs.append(resp.embeddings[0].values)
+    arr = np.array(vecs, dtype=np.float32)
+    arr /= np.linalg.norm(arr, axis=1, keepdims=True) + 1e-8
+    return arr
 
 
 print("Cargando corpus FORGED...")

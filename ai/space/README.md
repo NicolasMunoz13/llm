@@ -20,7 +20,7 @@ LLM: **Google Gemini** (tier gratuito) — embeddings + generación con una sola
 
 ## Cómo funciona
 
-1. Al arrancar, embebe los documentos de `data/*.md` (`text-embedding-004`, task type RETRIEVAL_DOCUMENT).
+1. Al arrancar, embebe los documentos de `data/*.md` (`gemini-embedding-001`, task type RETRIEVAL_DOCUMENT).
 2. Por cada pregunta: recupera top-3 chunks por similitud coseno (query con RETRIEVAL_QUERY).
 3. Genera la respuesta con el contexto recuperado (`gemini-2.0-flash`, voz Goggins, cita fuentes).
 4. Safety lite: filtro de prompt injection en la entrada + disclaimer médico.
