@@ -12,6 +12,7 @@ Requiere el secret GEMINI_API_KEY en el Space (Settings -> Secrets).
 import os
 import re
 import glob
+import time
 import numpy as np
 import gradio as gr
 from google import genai
@@ -21,7 +22,13 @@ from google.genai import types
 # 0. Config
 # ----------------------------------------------------------------------------
 EMBED_MODEL = os.getenv("FORGED_EMBED_MODEL", "gemini-embedding-001")
-CHAT_MODEL = os.getenv("FORGED_CHAT_MODEL", "gemini-2.5-flash")
+CHAT_MODEL = os.getenv("FORGED_CHAT_MODEL", "gemini-2.5-flash-lite")
+# Si el modelo principal está saturado (503), probamos estos por orden.
+FALLBACK_MODELS = [
+    m.strip()
+    for m in os.getenv("FORGED_FALLBACK_MODELS", "gemini-2.5-flash-lite,gemini-2.5-flash,gemini-2.0-flash").split(",")
+    if m.strip()
+]
 TOP_K = 3
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
@@ -128,25 +135,34 @@ def coach(message, history):
         types.Content(role="user", parts=[types.Part(text=f"CONTEXTO:\n{context}\n\nPREGUNTA: {message}")])
     )
 
-    try:
-        resp = client.models.generate_content(
-            model=CHAT_MODEL,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                temperature=0.6,
-                max_output_tokens=600,
-            ),
-        )
-        return resp.text
-    except Exception as e:
-        # El tier gratuito de Gemini limita a pocas peticiones/min: degradar sin tumbar el Space.
-        msg = str(e)
-        if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
-            return "He llegado al límite de peticiones por ahora. Respira, espera un minuto y vuelve a la carga."
-        if "503" in msg or "UNAVAILABLE" in msg:
-            return "El modelo está saturado en este momento. Aguanta unos segundos y reintenta. Stay hard."
-        return "Algo ha fallado al generar la respuesta. Reintenta en un momento."
+    config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        temperature=0.6,
+        max_output_tokens=600,
+    )
+
+    # Orden de modelos a intentar: el principal primero, luego los de respaldo (sin duplicar).
+    models_to_try = [CHAT_MODEL] + [m for m in FALLBACK_MODELS if m != CHAT_MODEL]
+    last_err = None
+    for model in models_to_try:
+        for attempt in range(3):  # reintentos ante 503/UNAVAILABLE (saturación transitoria)
+            try:
+                resp = client.models.generate_content(model=model, contents=contents, config=config)
+                return resp.text
+            except Exception as e:
+                last_err = e
+                msg = str(e)
+                if "503" in msg or "UNAVAILABLE" in msg:
+                    time.sleep(1.5 * (attempt + 1))  # backoff y reintenta; si persiste, pasa al siguiente modelo
+                    continue
+                if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+                    return "He llegado al límite de peticiones por ahora. Respira, espera un minuto y vuelve a la carga."
+                break  # otro error: no insistir con este modelo
+
+    msg = str(last_err) if last_err else ""
+    if "503" in msg or "UNAVAILABLE" in msg:
+        return "Los modelos de Gemini están saturados ahora mismo (alta demanda). Aguanta un minuto y reintenta. Stay hard."
+    return "Algo ha fallado al generar la respuesta. Reintenta en un momento."
 
 
 # ----------------------------------------------------------------------------
