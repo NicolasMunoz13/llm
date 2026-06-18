@@ -70,6 +70,9 @@ Todo el detalle está en [`ai/README.md`](ai/README.md). Resumen:
 4. Añade `GEMINI_API_KEY` como **secret** del Space (key gratis en https://aistudio.google.com/apikey).
 5. Copia la URL pública del Space en `NEXT_PUBLIC_COACH_URL` (local y en Vercel).
 
+## Enlace de acceso a la aplicación
+https://llm-green-tau.vercel.app/coach
+
 ## Checklist de aceptación (ver `01-DOCS/spec.md`)
 
 - [x] `npm install && npm run build` sin errores.
